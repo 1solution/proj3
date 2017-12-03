@@ -310,19 +310,44 @@ void print_clusters(struct cluster_t *carr, int narr)
     }
 }
 
+    void finisher(int *imported, struct cluster_t *clusters) { // cleaning everytime
+        for(int i = 0; i < *imported; i++)
+            clear_cluster(&clusters[i]); // clear clusters inside CLUSTERS[]
+        free(clusters); // clear CLUSTERS[]
+    }
+
 int main(int argc, char *argv[])
 {
 
     struct cluster_t *clusters;
 
-    int N = load_clusters("/home/mikee/Desktop/proj3/bin/Debug/objekty",&clusters);
+    if(argc >= 2) {
 
-    print_clusters(clusters, N);
+    int imported = load_clusters(/*"/home/mikee/Desktop/proj3/bin/Debug/objekty"*/argv[1],&clusters); // how many lines was imported
 
-    for(int i = 0; i < N; i++)
-        clear_cluster(&clusters[i]); // clear clusters inside CLUSTERS[]
-    free(clusters); // clear CLUSTERS[]
+       if(argv[2]) { // N processing
+            char *end;
+            unsigned int N = strtol(argv[2],&end,10);
+            if(N == 0 || *end != '\0') {
+                fprintf(stderr,"%s","Wrong argument N (must be number > 0)");
+                finisher(&imported,clusters);
+                return 1;
+            }
+        }
+        else {
+        unsigned int N = 1;
+        }
 
+    print_clusters(clusters, imported);
+    printf("\n");
+
+    finisher(&imported,clusters);
     return 0;
+    }
+    else {
+        fprintf(stderr,"%s","Incorrect argument count.\n");
+        return 1;
+    }
+
 
 }

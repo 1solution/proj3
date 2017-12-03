@@ -245,8 +245,7 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
             tmp += obj_distance(&c1->obj[i],&c2->obj[j]);
         }
     }
-
-    return tmp / (j i);
+    return tmp / (c1->size * c2->size);
 }
 
 /*
@@ -259,7 +258,24 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
 {
     assert(narr > 0);
 
-    // TODO
+    float minimum;
+
+    for(int i = 0; i < narr; i++) {
+        for(int j = i+1; j < narr; j++) {
+            if(i == 0 && j == 1) {
+                minimum = cluster_distance(&carr[i], &carr[j]);
+                *c1 = i;
+                *c2 = j;
+            }
+            else {
+                float tmp = cluster_distance(&carr[i], &carr[j]);
+                if(tmp < minimum) {
+                    *c1 = i;
+                    *c2 = j;
+                }
+            }
+        }
+    }
 }
 
 static int obj_sort_compar(const void *a, const void *b) {

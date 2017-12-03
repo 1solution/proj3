@@ -61,12 +61,11 @@ void init_cluster(struct cluster_t *c, int cap) {
         c->capacity = 0;
     }
 }
-/*
+
 void clear_cluster(struct cluster_t *c) {
   free(c->obj);
   init_cluster(c,0);
 }
-*/
 
 const int CLUSTER_CHUNK = 10; // when reallocationg, use this value as step+
 
@@ -88,13 +87,13 @@ struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap) {
     c->capacity = new_cap;
     return c;
 }
-/*
+
 void append_cluster(struct cluster_t *c, struct obj_t obj) {
   if(c->size >= c->capacity)
     resize_cluster(c,CLUSTER_CHUNK+c->capacity);
      c->obj[c->size] = obj; // merge new obj
     c->size += 1;
-}*/
+}
 
 int load_clusters(char *filename, struct cluster_t **arr) {
 	assert(arr != NULL);
@@ -113,7 +112,9 @@ int load_clusters(char *filename, struct cluster_t **arr) {
     int i = 0;
     int nStr[6] = {'\0'};
     int n = 0;
-    while(c != EOF || c!= '\n') {
+    int done = 0;
+
+    while(c != EOF && c != '\n') {
 
         c = fgetc(foo);
 
@@ -123,22 +124,22 @@ int load_clusters(char *filename, struct cluster_t **arr) {
         if(i == 6) {
                 c = fgetc(foo);
                     int j = 0;
-                while(1) {
+
+                while(!done) {
                     if(isdigit(c)) {
                         nStr[j] = c - 48;
                         j++;
+                        c = fgetc(foo);
                     }
                     else if((c == '\n' || c == '\r') && j > 0) {
-
                         for(int i = 0; i < j; i++)
-                            n = n + (nStr[j-i-1] * pow(10,i));
-                        return n;
+                            n += (nStr[j-i-1] * pow(10,i));
+                        done = 1;
                     }
                     else {
                         fprintf(stderr,"%s","Wrong input file format - N is not a number or missing.\n");
                         return 0;
                     }
-                    c = fgetc(foo);
                 }
 
         }
@@ -148,9 +149,9 @@ int load_clusters(char *filename, struct cluster_t **arr) {
   struct cluster_t *clusters = malloc(n*sizeof(struct cluster_t));
   *arr = clusters;
 
-  int id = 0;
-  float x = 0.0;
-  float y = 0.0;
+  int id;
+  float x;
+  float y;
   char endline;
 
   for(int i = 0; i < n; i++) {
@@ -184,7 +185,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
 	return n;
 }
 
-/*void sort_cluster(struct cluster_t *c);
+void sort_cluster(struct cluster_t *c);
 
 void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
 {
@@ -199,7 +200,7 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
 
     sort_cluster(c1);
 }
-*/
+
 /* Prace s polem shluku */
 
 /*
@@ -207,7 +208,7 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
  (shluku). Shluk pro odstraneni se nachazi na indexu 'idx'. Funkce vraci novy
  pocet shluku v poli.
 */
-/* int remove_cluster(struct cluster_t *carr, int narr, int idx)
+ int remove_cluster(struct cluster_t *carr, int narr, int idx)
 {
     assert(idx < narr);
     assert(narr > 0);
@@ -217,20 +218,18 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
 
     return carr->size;
 }
-*/
-/*
- Pocita Euklidovskou vzdalenost mezi dvema objekty.
- *//*
+
+
 float obj_distance(struct obj_t *o1, struct obj_t *o2)
 {
     assert(o1 != NULL);
     assert(o2 != NULL);
 
-    // TODO
+    float d = sqrt(pow(o2->x-o1->x,2)+pow(o2->y-o1->y,2));
+
+    return d;
+
 }
-*/
-/*
- Pocita vzdalenost dvou shluku.
 
 float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
 {
@@ -239,15 +238,23 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
     assert(c2 != NULL);
     assert(c2->size > 0);
 
-    // TODO
-}*/
+    float tmp = 0;
+
+    for(int i = 0; i < c1->size; i++) {
+        for(int j = 0; j < c2->size; j++) {
+            tmp += obj_distance(&c1->obj[i],&c2->obj[j]);
+        }
+    }
+
+    return tmp / (j i);
+}
 
 /*
  Funkce najde dva nejblizsi shluky. V poli shluku 'carr' o velikosti 'narr'
  hleda dva nejblizsi shluky. Nalezene shluky identifikuje jejich indexy v poli
  'carr'. Funkce nalezene shluky (indexy do pole 'carr') uklada do pameti na
  adresu 'c1' resp. 'c2'.
-*//*
+*/
 void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
 {
     assert(narr > 0);
@@ -265,7 +272,7 @@ static int obj_sort_compar(const void *a, const void *b) {
 
 void sort_cluster(struct cluster_t *c) {
     qsort(c->obj, c->size, sizeof(struct obj_t), &obj_sort_compar);
-}*/
+}
 
 void print_cluster(struct cluster_t *c) {
 
@@ -289,9 +296,16 @@ void print_clusters(struct cluster_t *carr, int narr)
 
 int main(int argc, char *argv[])
 {
+
     struct cluster_t *clusters;
 
-    print_clusters(clusters, load_clusters("/home/mikee/Desktop/proj3/bin/Debug/objekty",&clusters));
+    int N = load_clusters("/home/mikee/Desktop/proj3/bin/Debug/objekty",&clusters);
+
+    print_clusters(clusters, N);
+
+    for(int i = 0; i < N; i++)
+        clear_cluster(&clusters[i]); // clear clusters inside CLUSTERS[]
+    free(clusters); // clear CLUSTERS[]
 
     return 0;
 

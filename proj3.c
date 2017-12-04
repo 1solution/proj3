@@ -323,21 +323,32 @@ int main(int argc, char *argv[])
 
     if(argc >= 2) {
 
-    int imported = load_clusters(/*"/home/mikee/Desktop/proj3/bin/Debug/objekty"*/argv[1],&clusters); // how many lines was imported
+    int N = 1;
+    int *M = &N;
+    int imported = load_clusters(argv[1],&clusters); // how many lines was imported
 
        if(argv[2]) { // N processing
             char *end;
-            unsigned int N = strtol(argv[2],&end,10);
-            if(N == 0 || *end != '\0') {
+            *M = strtol(argv[2],&end,10);
+            if(*M == 0 || *end != '\0') {
                 fprintf(stderr,"%s","Wrong argument N (must be number > 0)");
                 finisher(&imported,clusters);
                 return 1;
             }
         }
-        else {
-        unsigned int N = 1;
-        }
 
+    printf("testing if printf ok:\n");
+    print_clusters(clusters, imported);
+    printf("\n");
+
+    while(clusters->size > *M) { // chybovy stav osetrit: kdyz je N vetsi nez pocet prvku CLUSTER[] na zacatku
+        int n1, n2;
+        find_neighbours(clusters,clusters->size,&n1, &n2); // chybovy stav osetrit: co kdyz jsou stejne velky dve vzdalenosti?
+        merge_clusters(&clusters[n1],&clusters[n2]);
+        // remove?
+    }
+
+    printf("testing if while neighbours work:\n");
     print_clusters(clusters, imported);
     printf("\n");
 

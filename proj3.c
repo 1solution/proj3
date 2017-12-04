@@ -214,9 +214,13 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
     assert(narr > 0);
 
     clear_cluster(&carr[idx]);
-    carr->size -= 1;
 
-    return carr->size;
+    for(int i = idx; i < narr; i++)
+        carr[i] = carr[i+1];
+
+    narr -= 1;
+
+    return narr;
 }
 
 
@@ -337,20 +341,14 @@ int main(int argc, char *argv[])
             }
         }
 
-    printf("testing if printf ok:\n");
-    print_clusters(clusters, imported);
-    printf("\n");
-
-    while(clusters->size > *M) { // chybovy stav osetrit: kdyz je N vetsi nez pocet prvku CLUSTER[] na zacatku
+    while(imported > *M) { // chybovy stav osetrit: kdyz je N vetsi nez pocet prvku CLUSTER[] na zacatku
         int n1, n2;
-        find_neighbours(clusters,clusters->size,&n1, &n2); // chybovy stav osetrit: co kdyz jsou stejne velky dve vzdalenosti?
+        find_neighbours(clusters,imported,&n1, &n2); // chybovy stav osetrit: co kdyz jsou stejne velky dve vzdalenosti?
         merge_clusters(&clusters[n1],&clusters[n2]);
-        // remove?
+        imported = remove_cluster(clusters,imported,n2);
     }
 
-    printf("testing if while neighbours work:\n");
     print_clusters(clusters, imported);
-    printf("\n");
 
     finisher(&imported,clusters);
     return 0;

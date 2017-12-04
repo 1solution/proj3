@@ -192,9 +192,6 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
     assert(c1 != NULL);
     assert(c2 != NULL);
 
-    if(c1->capacity < c1->size+c2->size)
-        resize_cluster(c1, c1->size+c2->size);
-
     for(int i = 0; i < c2->size; i++)
         append_cluster(c1, c2->obj[i]);
 
@@ -215,7 +212,7 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
 
     clear_cluster(&carr[idx]);
 
-    for(int i = idx; i < narr; i++)
+    for(int i = idx; i < narr-1; i++)
         carr[i] = carr[i+1];
 
     narr -= 1;
@@ -249,7 +246,7 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
             tmp += obj_distance(&c1->obj[i],&c2->obj[j]);
         }
     }
-    return tmp / (c1->size * c2->size);
+    return (tmp / (c1->size * c2->size));
 }
 
 /*
@@ -263,7 +260,7 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
     assert(narr > 0);
 
     float minimum;
-
+    float tmp;
     for(int i = 0; i < narr; i++) {
         for(int j = i+1; j < narr; j++) {
             if(i == 0 && j == 1) {
@@ -272,8 +269,9 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
                 *c2 = j;
             }
             else {
-                float tmp = cluster_distance(&carr[i], &carr[j]);
+                 tmp = cluster_distance(&carr[i], &carr[j]);
                 if(tmp < minimum) {
+                    minimum = tmp;
                     *c1 = i;
                     *c2 = j;
                 }
@@ -328,24 +326,23 @@ int main(int argc, char *argv[])
     if(argc >= 2) {
 
     int N = 1;
-    int *M = &N;
-    int imported = load_clusters(argv[1],&clusters); // how many lines was imported
+    int imported = load_clusters(argv[1],&clusters); // importer = how many lines was imported from file
 
        if(argv[2]) { // N processing
             char *end;
-            *M = strtol(argv[2],&end,10);
-            if(*M == 0 || *end != '\0') {
-                fprintf(stderr,"%s","Wrong argument N (must be number > 0)");
+            N = strtol(argv[2],&end,10);
+            if(N == 0 || *end != '\0' || N > imported) {
+                fprintf(stderr,"%s","Wrong argument N (must be number > 0) and N <= number of lines in file.");
                 finisher(&imported,clusters);
                 return 1;
             }
         }
 
-    while(imported > *M) { // chybovy stav osetrit: kdyz je N vetsi nez pocet prvku CLUSTER[] na zacatku
-        int n1, n2;
-        find_neighbours(clusters,imported,&n1, &n2); // chybovy stav osetrit: co kdyz jsou stejne velky dve vzdalenosti?
-        merge_clusters(&clusters[n1],&clusters[n2]);
-        imported = remove_cluster(clusters,imported,n2);
+    while(imported > N) {
+        int c1, c2;
+        find_neighbours(clusters,imported,&c1, &c2);
+        merge_clusters(&clusters[c1],&clusters[c2]);
+        imported = remove_cluster(clusters,imported,c2);
     }
 
     print_clusters(clusters, imported);

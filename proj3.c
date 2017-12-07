@@ -34,25 +34,42 @@
 
 #endif
 
-struct obj_t { // OBJEKT: id, x a y
+/*****************************************************************
+ * Deklarace potrebnych datovych typu:
+ *
+ * TYTO DEKLARACE NEMENTE
+ *
+ *   struct obj_t - struktura objektu: identifikator a souradnice
+ *   struct cluster_t - shluk objektu:
+ *      pocet objektu ve shluku,
+ *      kapacita shluku (pocet objektu, pro ktere je rezervovano
+ *          misto v poli),
+ *      ukazatel na pole shluku.
+ */
+
+struct obj_t { // definition of object (one line in file)
     int id;
     float x;
     float y;
 };
 
 struct cluster_t { // CLUSTER X OBJEKTU:
-    int size; // pocet objektu ve shluku
-    int capacity; //pocet objektu, pro ktere je rezervovano misto v poli
-    struct obj_t *obj; // ukazatel na vlastni objekt
+    int size; // actual count of objects
+    int capacity; // capacity of field - for objects
+    struct obj_t *obj; // ptr to object
 };
 
+/*
+ Inicializace shluku 'c'. Alokuje pamet pro cap objektu (kapacitu).
+ Ukazatel NULL u pole objektu znamena kapacitu 0.
+*/
 void init_cluster(struct cluster_t *c, int cap) {
     assert(c != NULL);
     assert(cap >= 0);
 
-    c->size = 0;
+    c->size = 0; // set size to zero - neccessary
     c->capacity = cap;
-    c->obj = NULL; // NULL is result in c->obj if c->cap is zero
+    c->obj = NULL; // obj in cluster must be NULLed if capacity is zero!
 
     if(cap > 0) {
         c->obj = malloc(cap * sizeof(struct obj_t));
@@ -62,6 +79,9 @@ void init_cluster(struct cluster_t *c, int cap) {
     }
 }
 
+/*
+ Odstraneni vsech objektu shluku a inicializace na prazdny shluk.
+ */
 void clear_cluster(struct cluster_t *c) {
   free(c->obj);
   init_cluster(c,0);
@@ -69,6 +89,9 @@ void clear_cluster(struct cluster_t *c) {
 
 const int CLUSTER_CHUNK = 10; // when reallocationg, use this value as step+
 
+/*
+ Zmena kapacity shluku 'c' na kapacitu 'new_cap'.
+ */
 struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap) {
     assert(c);
     assert(c->capacity >= 0);
@@ -88,6 +111,10 @@ struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap) {
     return c;
 }
 
+/*
+ Prida objekt 'obj' na konec shluku 'c'. Rozsiri shluk, pokud se do nej objekt
+ nevejde.
+ */
 void append_cluster(struct cluster_t *c, struct obj_t obj) {
   if(c->size >= c->capacity)
     resize_cluster(c,CLUSTER_CHUNK+c->capacity);
@@ -95,6 +122,13 @@ void append_cluster(struct cluster_t *c, struct obj_t obj) {
     c->size += 1;
 }
 
+/*
+ Ze souboru 'filename' nacte objekty. Pro kazdy objekt vytvori shluk a ulozi
+ jej do pole shluku. Alokuje prostor pro pole vsech shluku a ukazatel na prvni
+ polozku pole (ukalazatel na prvni shluk v alokovanem poli) ulozi do pameti,
+ kam se odkazuje parametr 'arr'. Funkce vraci pocet nactenych objektu (shluku).
+ V pripade nejake chyby uklada do pameti, kam se odkazuje 'arr', hodnotu NULL.
+*/
 int load_clusters(char *filename, struct cluster_t **arr) {
 	assert(arr != NULL);
 
@@ -108,7 +142,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
         return 0;
     }
 
-    char fraze[] = "count=";// [0 1 2 3 4 5]
+    char fraze[] = "count=";// [0=c 1=o 2=u 3=n 4=t 5==]
     int c = 0;
     int i = 0;
     int nStr[6] = {'\0'};
@@ -148,6 +182,11 @@ int load_clusters(char *filename, struct cluster_t **arr) {
 
     }
 
+    if(n <= 0) {
+        fclose(foo);
+        return 0;
+    }
+
   struct cluster_t *clusters = malloc(n*sizeof(struct cluster_t));
   *arr = clusters;
 
@@ -157,9 +196,15 @@ int load_clusters(char *filename, struct cluster_t **arr) {
   char endline;
 
   for(int i = 0; i < n; i++) {
-    fscanf(foo,"%i%f%f%c",&id,&x,&y,&endline);
+    int c = fscanf(foo,"%i%f%f%c",&id,&x,&y,&endline);
 
-    /*if(endline == EOF || endline == '\n') {*/
+    if(c != 4 || (endline != EOF && endline != '\n')) {
+        *arr = NULL;
+        fprintf(stderr,"%s","Wrong file input, incorrect format of line data.\n");
+        fclose(foo);
+        return -1;
+    }
+
       struct cluster_t soloCluster;
       init_cluster(&soloCluster,1);
       soloCluster.size = 1;
@@ -176,20 +221,32 @@ int load_clusters(char *filename, struct cluster_t **arr) {
         fclose(foo);
         return 0;
       }
-
-    /*}*/
-    /*else {
-      *arr = NULL;
-      fprintf(stderr,"%s","Something wrong in input file.\n");
-      break;
-    }*/
   }
     fclose(foo);
 	return n;
 }
 
-void sort_cluster(struct cluster_t *c);
+// pomocna funkce pro razeni shluku
+static int obj_sort_compar(const void *a, const void *b) {
+    const struct obj_t *o1 = (const struct obj_t *)a;
+    const struct obj_t *o2 = (const struct obj_t *)b;
+    if (o1->id < o2->id) return -1;
+    if (o1->id > o2->id) return 1;
+    return 0;
+}
 
+/*
+ Razeni objektu ve shluku vzestupne podle jejich identifikatoru.
+*/
+void sort_cluster(struct cluster_t *c) {
+    qsort(c->obj, c->size, sizeof(struct obj_t), &obj_sort_compar);
+}
+
+/*
+ Do shluku 'c1' prida objekty 'c2'. Shluk 'c1' bude v pripade nutnosti rozsiren.
+ Objekty ve shluku 'c1' budou serazeny vzestupne podle identifikacniho cisla.
+ Shluk 'c2' bude nezmenen.
+ */
 void merge_clusters(struct cluster_t *c1, struct cluster_t *c2) {
     assert(c1 != NULL);
     assert(c2 != NULL);
@@ -199,8 +256,6 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2) {
 
     sort_cluster(c1);
 }
-
-/* Prace s polem shluku */
 
 /*
  Odstrani shluk z pole shluku 'carr'. Pole shluku obsahuje 'narr' polozek
@@ -221,7 +276,9 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2) {
     return narr;
 }
 
-
+/*
+ Pocita Euklidovskou vzdalenost mezi dvema objekty.
+ */
 float obj_distance(struct obj_t *o1, struct obj_t *o2) {
     assert(o1 != NULL);
     assert(o2 != NULL);
@@ -232,6 +289,9 @@ float obj_distance(struct obj_t *o1, struct obj_t *o2) {
 
 }
 
+/*
+ Pocita vzdalenost dvou shluku.
+*/
 float cluster_distance(struct cluster_t *c1, struct cluster_t *c2) {
     assert(c1 != NULL);
     assert(c1->size > 0);
@@ -278,18 +338,9 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2) {
     }
 }
 
-static int obj_sort_compar(const void *a, const void *b) {
-    const struct obj_t *o1 = (const struct obj_t *)a;
-    const struct obj_t *o2 = (const struct obj_t *)b;
-    if (o1->id < o2->id) return -1;
-    if (o1->id > o2->id) return 1;
-    return 0;
-}
-
-void sort_cluster(struct cluster_t *c) {
-    qsort(c->obj, c->size, sizeof(struct obj_t), &obj_sort_compar);
-}
-
+/*
+ Tisk shluku 'c' na stdout.
+*/
 void print_cluster(struct cluster_t *c) {
 
     for (int i = 0; i < c->size; i++)
@@ -300,6 +351,10 @@ void print_cluster(struct cluster_t *c) {
     putchar('\n');
 }
 
+/*
+ Tisk pole shluku. Parametr 'carr' je ukazatel na prvni polozku (shluk).
+ Tiskne se prvnich 'narr' shluku.
+*/
 void print_clusters(struct cluster_t *carr, int narr) {
     printf("Clusters:\n");
     for (int i = 0; i < narr; i++)
@@ -309,6 +364,9 @@ void print_clusters(struct cluster_t *carr, int narr) {
     }
 }
 
+/*
+    autoclean function, cleans everytime if program ends up with -1
+*/
     void finisher(int *imported, struct cluster_t *clusters) { // cleaning everytime
         for(int i = 0; i < *imported; i++)
             clear_cluster(&clusters[i]); // clear clusters inside CLUSTERS[]
@@ -347,9 +405,12 @@ int main(int argc, char *argv[]) {
             finisher(&imported,clusters);
             return 0;
         }
+        else if(imported == -1) {
+            finisher(&imported,clusters);
+            return 1;
+        }
         else {
             fprintf(stderr,"%s","Minimum nr. of lines to read from file is 1.");
-            finisher(&imported,clusters);
             return 1;
         }
 

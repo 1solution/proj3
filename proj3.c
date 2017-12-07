@@ -1,3 +1,7 @@
+/* IZP - 3. projekt - shlukova analyza
+* xplsek03, 163714
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -34,7 +38,7 @@
 
 #endif
 
-/*****************************************************************
+/* ****************************************************************
  * Deklarace potrebnych datovych typu:
  *
  * TYTO DEKLARACE NEMENTE
@@ -53,7 +57,7 @@ struct obj_t { // definition of object (one line in file)
     float y;
 };
 
-struct cluster_t { // CLUSTER X OBJEKTU:
+struct cluster_t { // cluster of clusters
     int size; // actual count of objects
     int capacity; // capacity of field - for objects
     struct obj_t *obj; // ptr to object
@@ -374,11 +378,11 @@ void print_clusters(struct cluster_t *carr, int narr) {
 
 int main(int argc, char *argv[]) {
 
-    struct cluster_t *clusters; // field of all clusters
+    struct cluster_t *clusters;
 
     if(argc >= 2) {
 
-    int N = 1; // default for N (when missing from argument)
+    int N = 1;
     int imported = load_clusters(argv[1],&clusters); // importer = how many lines was imported from file
 
         if (imported > 0) {
@@ -392,19 +396,19 @@ int main(int argc, char *argv[]) {
                     }
                 }
 
-            while(imported > N) { // processing and connecting clusters step by step, until desired count (N)
+            while(imported > N) {
                 int c1, c2;
                 find_neighbours(clusters,imported,&c1, &c2);
                 merge_clusters(&clusters[c1],&clusters[c2]);
                 imported = remove_cluster(clusters,imported,c2);
             }
 
-            print_clusters(clusters, imported); // print result
+            print_clusters(clusters, imported);
 
             finisher(&imported,clusters);
             return 0;
         }
-        else if(imported == -1) { // if there is incorrect format of input data
+        else if(imported == -1) {
             finisher(&imported,clusters);
             return 1;
         }

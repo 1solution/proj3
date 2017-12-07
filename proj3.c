@@ -104,6 +104,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
     if(foo == NULL) {
         *arr = NULL;
         fprintf(stderr,"%s","File does not exist.\n");
+        fclose(foo);
         return 0;
     }
 
@@ -138,6 +139,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
                     }
                     else {
                         fprintf(stderr,"%s","Wrong input file format - N is not a number or missing.\n");
+                        fclose(foo);
                         return 0;
                     }
                 }
@@ -171,6 +173,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
       else {
         *arr = NULL;
         fprintf(stderr,"%s","X or Y from file is not in correct format.\n");
+        fclose(foo);
         return 0;
       }
 
@@ -181,7 +184,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
       break;
     }*/
   }
-  fclose(foo);
+    fclose(foo);
 	return n;
 }
 
@@ -328,27 +331,34 @@ int main(int argc, char *argv[])
     int N = 1;
     int imported = load_clusters(argv[1],&clusters); // importer = how many lines was imported from file
 
-       if(argv[2]) { // N processing
-            char *end;
-            N = strtol(argv[2],&end,10);
-            if(N == 0 || *end != '\0' || N > imported) {
-                fprintf(stderr,"%s","Wrong argument N (must be number > 0) and N <= number of lines in file.");
-                finisher(&imported,clusters);
-                return 1;
+        if (imported > 0) {
+               if(argv[2]) { // N processing
+                    char *end;
+                    N = strtol(argv[2],&end,10);
+                    if(N == 0 || *end != '\0' || N > imported) {
+                        fprintf(stderr,"%s","Wrong argument N (must be number > 0) and N <= number of lines in file.");
+                        finisher(&imported,clusters);
+                        return 1;
+                    }
+                }
+
+            while(imported > N) {
+                int c1, c2;
+                find_neighbours(clusters,imported,&c1, &c2);
+                merge_clusters(&clusters[c1],&clusters[c2]);
+                imported = remove_cluster(clusters,imported,c2);
             }
+
+            print_clusters(clusters, imported);
+
+            finisher(&imported,clusters);
+            return 0;
+        }
+        else {
+            finisher(&imported,clusters);
+            return 1;
         }
 
-    while(imported > N) {
-        int c1, c2;
-        find_neighbours(clusters,imported,&c1, &c2);
-        merge_clusters(&clusters[c1],&clusters[c2]);
-        imported = remove_cluster(clusters,imported,c2);
-    }
-
-    print_clusters(clusters, imported);
-
-    finisher(&imported,clusters);
-    return 0;
     }
     else {
         fprintf(stderr,"%s","Incorrect argument count.\n");

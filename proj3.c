@@ -138,7 +138,6 @@ int load_clusters(char *filename, struct cluster_t **arr) {
     if(foo == NULL) {
         *arr = NULL;
         fprintf(stderr,"%s","File does not exist.\n");
-        fclose(foo);
         return 0;
     }
 
@@ -375,11 +374,11 @@ void print_clusters(struct cluster_t *carr, int narr) {
 
 int main(int argc, char *argv[]) {
 
-    struct cluster_t *clusters;
+    struct cluster_t *clusters; // field of all clusters
 
     if(argc >= 2) {
 
-    int N = 1;
+    int N = 1; // default for N (when missing from argument)
     int imported = load_clusters(argv[1],&clusters); // importer = how many lines was imported from file
 
         if (imported > 0) {
@@ -387,30 +386,30 @@ int main(int argc, char *argv[]) {
                     char *end;
                     N = strtol(argv[2],&end,10);
                     if(N <= 0 || *end != '\0' || N > imported) {
-                        fprintf(stderr,"%s","Wrong argument N (must be number > 0) and N <= number of lines in file.");
+                        fprintf(stderr,"%s","Wrong argument N (must be number > 0) and N <= number of lines in file.\n");
                         finisher(&imported,clusters);
                         return 1;
                     }
                 }
 
-            while(imported > N) {
+            while(imported > N) { // processing and connecting clusters step by step, until desired count (N)
                 int c1, c2;
                 find_neighbours(clusters,imported,&c1, &c2);
                 merge_clusters(&clusters[c1],&clusters[c2]);
                 imported = remove_cluster(clusters,imported,c2);
             }
 
-            print_clusters(clusters, imported);
+            print_clusters(clusters, imported); // print result
 
             finisher(&imported,clusters);
             return 0;
         }
-        else if(imported == -1) {
+        else if(imported == -1) { // if there is incorrect format of input data
             finisher(&imported,clusters);
             return 1;
         }
         else {
-            fprintf(stderr,"%s","Minimum nr. of lines to read from file is 1.");
+            fprintf(stderr,"%s","Minimum nr. of lines to read from file is 1.\n");
             return 1;
         }
 

@@ -190,8 +190,7 @@ int load_clusters(char *filename, struct cluster_t **arr) {
 
 void sort_cluster(struct cluster_t *c);
 
-void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
-{
+void merge_clusters(struct cluster_t *c1, struct cluster_t *c2) {
     assert(c1 != NULL);
     assert(c2 != NULL);
 
@@ -208,8 +207,7 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
  (shluku). Shluk pro odstraneni se nachazi na indexu 'idx'. Funkce vraci novy
  pocet shluku v poli.
 */
- int remove_cluster(struct cluster_t *carr, int narr, int idx)
-{
+ int remove_cluster(struct cluster_t *carr, int narr, int idx) {
     assert(idx < narr);
     assert(narr > 0);
 
@@ -224,8 +222,7 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
 }
 
 
-float obj_distance(struct obj_t *o1, struct obj_t *o2)
-{
+float obj_distance(struct obj_t *o1, struct obj_t *o2) {
     assert(o1 != NULL);
     assert(o2 != NULL);
 
@@ -235,8 +232,7 @@ float obj_distance(struct obj_t *o1, struct obj_t *o2)
 
 }
 
-float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
-{
+float cluster_distance(struct cluster_t *c1, struct cluster_t *c2) {
     assert(c1 != NULL);
     assert(c1->size > 0);
     assert(c2 != NULL);
@@ -258,8 +254,7 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
  'carr'. Funkce nalezene shluky (indexy do pole 'carr') uklada do pameti na
  adresu 'c1' resp. 'c2'.
 */
-void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
-{
+void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2) {
     assert(narr > 0);
 
     float minimum;
@@ -305,8 +300,7 @@ void print_cluster(struct cluster_t *c) {
     putchar('\n');
 }
 
-void print_clusters(struct cluster_t *carr, int narr)
-{
+void print_clusters(struct cluster_t *carr, int narr) {
     printf("Clusters:\n");
     for (int i = 0; i < narr; i++)
     {
@@ -321,8 +315,7 @@ void print_clusters(struct cluster_t *carr, int narr)
         free(clusters); // clear CLUSTERS[]
     }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 
     struct cluster_t *clusters;
 
@@ -335,7 +328,7 @@ int main(int argc, char *argv[])
                if(argv[2]) { // N processing
                     char *end;
                     N = strtol(argv[2],&end,10);
-                    if(N == 0 || *end != '\0' || N > imported) {
+                    if(N <= 0 || *end != '\0' || N > imported) {
                         fprintf(stderr,"%s","Wrong argument N (must be number > 0) and N <= number of lines in file.");
                         finisher(&imported,clusters);
                         return 1;
@@ -355,6 +348,7 @@ int main(int argc, char *argv[])
             return 0;
         }
         else {
+            fprintf(stderr,"%s","Minimum nr. of lines to read from file is 1.");
             finisher(&imported,clusters);
             return 1;
         }
@@ -364,6 +358,4 @@ int main(int argc, char *argv[])
         fprintf(stderr,"%s","Incorrect argument count.\n");
         return 1;
     }
-
-
 }
